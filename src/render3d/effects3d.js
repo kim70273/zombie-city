@@ -129,13 +129,13 @@ export class Effects3D {
       case 'muzzle': {
         const s = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: T.flash, transparent: true })));
         s.scale.setScalar(14);
-        s.position.set(x, data.h ?? 24, y);
+        s.position.set(x, data.h ?? 38, y);
         break;
       }
       case 'scream': {
         const s = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: T.bang, transparent: true })));
         s.scale.setScalar(12);
-        s.position.set(x, 52, y);
+        s.position.set(x, 84, y);
         e.bang = s;
         break;
       }
@@ -144,7 +144,7 @@ export class Effects3D {
           new THREE.SphereGeometry(4, 8, 6),
           new THREE.MeshBasicMaterial({ color: 0xff5a5a, transparent: true })
         ));
-        s.position.set(x, 26, y);
+        s.position.set(x, 38, y);
         e.hitMesh = s;
         break;
       }
@@ -181,7 +181,7 @@ export class Effects3D {
           }
           break;
         case 'death':
-          e.ghost.position.y = 18 + k * 34;
+          e.ghost.position.y = 30 + k * 40;
           e.ghost.material.opacity = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8;
           for (const o of e.objs) {
             if (o === e.ghost) continue;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { TILE, CRATE_FALL_TICKS } from '../config.js';
+import { T } from '../core/mapgen.js';
 import { CityWorld } from './world3d.js';
 import { CharacterFactory } from './chars3d.js';
 import { Effects3D } from './effects3d.js';
@@ -166,7 +167,7 @@ export class Renderer3D {
     tex.colorSpace = THREE.SRGBColorSpace;
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
     sprite.scale.set(44, 11, 1);
-    sprite.position.y = 64;
+    sprite.position.y = 86;
     r.rig.group.add(sprite);
     r.tag = sprite;
   }
@@ -288,7 +289,7 @@ export class Renderer3D {
     for (let i = 0; i < this.bullets.length; i++) {
       const pr = view.projectiles[i];
       this.bullets[i].visible = !!pr;
-      if (pr) this.bullets[i].position.set(pr.x, 24, pr.y);
+      if (pr) this.bullets[i].position.set(pr.x, 38, pr.y);
     }
   }
 
@@ -350,11 +351,25 @@ export class Renderer3D {
       this.sun.target.updateMatrixWorld();
     }
 
-    // third-person camera
+    // third-person camera with wall collision (2D tile raycast behind the player;
+    // skipped indoors — the building fade already handles see-through there)
     const pitch = Math.max(-0.12, Math.min(0.6, cam.pitch ?? 0.3));
     const fx = Math.cos(camYaw);
     const fz = Math.sin(camYaw);
-    const dist = 160;
+    let dist = 160;
+    if (this.map.buildingAt(cam.x, cam.y) === -1) {
+      const step = 8;
+      const maxD = dist * Math.cos(pitch);
+      for (let d = 24; d <= maxD; d += step) {
+        const sx = cam.x - fx * d;
+        const sy = cam.y - fz * d;
+        // only sight-blocking walls pull the camera in (trees/cars stay see-through)
+        if (this.map.tileAt((sx / TILE) | 0, (sy / TILE) | 0) === T.WALL) {
+          dist = Math.max(70, (d - step) / Math.cos(pitch));
+          break;
+        }
+      }
+    }
     const dXZ = dist * Math.cos(pitch);
     const target = new THREE.Vector3(
       cam.x - fx * dXZ,
