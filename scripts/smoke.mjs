@@ -102,23 +102,19 @@ if (guestAuthMoved < 30) { console.log('FAIL: guest input not reaching host'); p
 await host.screenshot({ path: 'shots/03-game-host.png' });
 await guest.screenshot({ path: 'shots/04-game-guest.png' });
 
-// verify the guest is actually receiving state: canvas should not be uniform
-const guestPixels = await guest.evaluate(() => {
-  const c = document.getElementById('game');
-  const ctx2 = c.getContext('2d');
-  const d = ctx2.getImageData(0, 0, Math.min(400, c.width), Math.min(400, c.height)).data;
-  const set = new Set();
-  for (let i = 0; i < d.length; i += 4) set.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
-  return set.size;
+// verify the 3D renderer is actually drawing on the guest
+const renderInfo = await guest.evaluate(() => {
+  const inf = window.__zc.renderer?.renderer?.info?.render;
+  return inf ? { calls: inf.calls, triangles: inf.triangles } : null;
 });
-console.log('GUEST CANVAS DISTINCT COLORS:', guestPixels);
+console.log('GUEST WEBGL RENDER INFO:', JSON.stringify(renderInfo));
 
 console.log('HOST ERRORS:', JSON.stringify(errors.host.slice(0, 10), null, 1));
 console.log('GUEST ERRORS:', JSON.stringify(errors.guest.slice(0, 10), null, 1));
 const fatal = [...errors.host, ...errors.guest].filter((e) => e.startsWith('pageerror'));
 await browser.close();
-if (guestPixels < 20) {
-  console.log('FAIL: guest canvas looks blank');
+if (!renderInfo || renderInfo.calls < 5 || renderInfo.triangles < 100) {
+  console.log('FAIL: guest WebGL renderer not drawing');
   process.exit(1);
 }
 if (fatal.length) {

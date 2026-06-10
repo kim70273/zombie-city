@@ -75,6 +75,7 @@ export class GuestWorld {
         isZombie: sp.isZombie, alive: sp.alive, hasGun: sp.hasGun,
         ammo: sp.ammo, vaccines: sp.vaccines, hp: sp.hp,
         stunned: sp.stunned, connected: sp.connected, removed: sp.removed,
+        yaw: sp.yaw ?? m.yaw ?? 0,
       });
       if (sp.pid === this.selfPid) {
         this.authX = sp.x;
@@ -121,6 +122,7 @@ export class GuestWorld {
         isZombie: sp.isZombie, alive: sp.alive, hasGun: sp.hasGun,
         ammo: sp.ammo, vaccines: sp.vaccines, hp: sp.hp,
         connected: sp.connected, removed: sp.removed,
+        yaw: sp.yaw ?? m.yaw ?? 0,
       });
       if (sp.pid === this.selfPid) {
         this.authX = sp.x;

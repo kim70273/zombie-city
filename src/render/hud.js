@@ -1,7 +1,16 @@
 import { TILE } from '../config.js';
 import { T } from '../core/mapgen.js';
-import { roundRect } from './renderer.js';
 import { makeGunSprite, makeSyringeSprite } from './props.js';
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
 // Screen-space HUD: timer, team counts, minimap, inventory, crate arrows,
 // countdown, spectate banner. Drawn after the world pass on the same canvas.

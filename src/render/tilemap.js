@@ -23,8 +23,10 @@ const BASE_COLORS = {
 };
 
 export class ChunkCache {
-  constructor(map) {
+  /** opts.props=false → bake ground colors only (3D mode places real meshes for props) */
+  constructor(map, opts = {}) {
     this.map = map;
+    this.props = opts.props !== false;
     this.cache = new Map();
     this.tree = makeTreeSprite();
     this.bench = makeBenchSprite();
@@ -111,13 +113,16 @@ export class ChunkCache {
         ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
         break;
       case T.TREE:
+        if (!this.props) break;
         ctx.drawImage(this.tree, px + TILE / 2 - this.tree.width / 4, py + TILE - this.tree.height / 2 - 4,
           this.tree.width / 2, this.tree.height / 2);
         break;
       case T.BENCH:
+        if (!this.props) break;
         ctx.drawImage(this.bench, px, py + 8, TILE, TILE / 2);
         break;
       case T.CAR: {
+        if (!this.props) break;
         // draw once per 2-tile pair (left tile of the pair)
         const leftIsCar = mx > 0 && map.tileAt(mx - 1, my) === T.CAR;
         if (!leftIsCar) {
@@ -127,6 +132,7 @@ export class ChunkCache {
         break;
       }
       case T.FURNITURE: {
+        if (!this.props) break;
         const leftIsF = mx > 0 && map.tileAt(mx - 1, my) === T.FURNITURE;
         if (!leftIsF) ctx.drawImage(this.furniture, px, py, TILE * 2, TILE);
         break;

@@ -7,6 +7,8 @@ import { MSG } from './protocol.js';
 import { genRoomCode, peerIdForCode, genToken } from './rooms.js';
 import { encodeSnapshot, decodeInput, KIND } from './codec.js';
 import { remainingMs } from '../core/sim.js';
+import { botInput } from '../core/bots.js';
+import { mulberry32 } from '../core/rng.js';
 
 // Host-side session: owns the PeerJS listener, lobby roster, input intake,
 // and event/snapshot fan-out. The sim itself lives outside (game loop).
@@ -25,7 +27,30 @@ export class HostSession {
     this.guests = new Map(); // peerId → guest
     this.byPid = new Map();  // pid → guest
     this.inputs = new Map(); // pid → {frame, at}
+    this.botPids = new Set();
+    this.botRng = mulberry32((Math.random() * 0xffffffff) >>> 0);
     this.destroyed = false;
+  }
+
+  addBot() {
+    if (this.phase !== 'lobby' || this.roster.length >= MAX_PLAYERS) return;
+    let pid = 1;
+    while (this.roster.some((r) => r.pid === pid)) pid++;
+    let n = 1;
+    while (this.roster.some((r) => r.name === `컴퓨터${n}`)) n++;
+    this.botPids.add(pid);
+    this.roster.push({
+      pid, name: `컴퓨터${n}`, look: (this.botRng() * 8) | 0,
+      ready: true, connected: true, isHost: false, isBot: true,
+    });
+    this.broadcastRoster();
+  }
+
+  removeBot(pid) {
+    if (this.phase !== 'lobby' || !this.botPids.has(pid)) return;
+    this.botPids.delete(pid);
+    this.roster = this.roster.filter((r) => r.pid !== pid);
+    this.broadcastRoster();
   }
 
   open(attempt = 0) {
@@ -269,6 +294,13 @@ export class HostSession {
   /** Pull latest guest inputs into the sim (call right before stepSim). */
   collectInputs() {
     const now = performance.now();
+    // bot players think host-side
+    if (this.sim && this.sim.phase === 'playing') {
+      for (const pid of this.botPids) {
+        const p = this.sim.players[pid];
+        if (p && p.alive && p.removedAtTick === null) p.input = botInput(this.sim, p, this.botRng);
+      }
+    }
     for (const [pid, rec] of this.inputs) {
       const p = this.sim.players[pid];
       if (!p) continue;
@@ -329,6 +361,7 @@ export class HostSession {
       remainingMs: remainingMs(sim),
       players: sim.players.filter(Boolean).map((p) => ({
         pid: p.pid, x: Math.round(p.x * 4) / 4, y: Math.round(p.y * 4) / 4, facing: p.facing,
+        yaw: (p.input?.aimDir ?? 0) & 0xff,
         isZombie: p.isZombie, alive: p.alive, hasGun: p.hasGun,
         ammo: p.ammo, vaccines: p.vaccines, hp: p.hp,
         connected: p.connected, removed: p.removedAtTick !== null,
@@ -349,9 +382,9 @@ export class HostSession {
     this.sim = null;
     this.startPayload = null;
     this.inputs.clear();
-    // drop disconnected players from roster; reset ready
-    this.roster = this.roster.filter((r) => r.isHost || this.byPid.get(r.pid)?.connected);
-    for (const r of this.roster) if (!r.isHost) r.ready = false;
+    // drop disconnected players from roster; bots stay; reset ready
+    this.roster = this.roster.filter((r) => r.isHost || r.isBot || this.byPid.get(r.pid)?.connected);
+    for (const r of this.roster) if (!r.isHost && !r.isBot) r.ready = false;
     for (const [pid, g] of [...this.byPid]) {
       if (!g.connected) this.byPid.delete(pid);
     }

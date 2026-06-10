@@ -10,7 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "peerjs": "^1.5.4"
+    "peerjs": "^1.5.4",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "vite": "^6.3.5",

@@ -105,7 +105,7 @@ export function showHome({ name, look, joinCode, onCreate, onJoin, onLookChange 
 
 // ---------- lobby ----------
 
-export function showLobby({ isHost, code, shareUrl, onDuration, onStart, onReady, onLeave, onLookCycle }) {
+export function showLobby({ isHost, code, shareUrl, onDuration, onStart, onReady, onLeave, onLookCycle, onAddBot, onRemoveBot }) {
   clearScreen();
   const screen = el('div', 'screen');
   const card = el('div', 'card wide');
@@ -133,6 +133,15 @@ export function showLobby({ isHost, code, shareUrl, onDuration, onStart, onReady
   card.appendChild(grid);
   const countHint = el('div', 'hint', '');
   card.appendChild(countHint);
+
+  let addBotBtn = null;
+  if (isHost) {
+    addBotBtn = el('button', 'secondary small', S.addBot);
+    addBotBtn.onclick = () => onAddBot?.();
+    const botRow = el('div', 'row');
+    botRow.appendChild(addBotBtn);
+    card.appendChild(botRow);
+  }
 
   card.appendChild(el('div', 'hint', S.duration + ' (시간이 길수록 맵이 커져요)'));
   const durRow = el('div', 'duration-row');
@@ -189,10 +198,16 @@ export function showLobby({ isHost, code, shareUrl, onDuration, onStart, onReady
         addPreview(pv, () => r.look);
         slot.appendChild(pv);
         slot.appendChild(el('div', 'pname', r.name));
-        slot.appendChild(el('div', 'badge', r.isHost ? S.host : r.ready ? S.readyDone : (r.connected === false ? '연결 끊김' : '')));
+        slot.appendChild(el('div', 'badge',
+          r.isHost ? S.host : r.isBot ? S.bot : r.ready ? S.readyDone : (r.connected === false ? '연결 끊김' : '')));
         if (r.pid === selfPid) {
           slot.title = S.tapToChangeLook;
           slot.onclick = () => onLookCycle();
+        }
+        if (r.isBot && isHost) {
+          const rm = el('button', 'danger small bot-remove', '✕');
+          rm.onclick = (e) => { e.stopPropagation(); onRemoveBot?.(r.pid); };
+          slot.appendChild(rm);
         }
         grid.appendChild(slot);
       }

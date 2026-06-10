@@ -27,10 +27,26 @@
 
 ## 기술
 
+- **3D 3인칭(숄더뷰)**: Three.js 셀셰이딩(젠레스 존 제로/원신풍 툰 렌더링), 절차 생성 애니메 캐릭터 8종
 - 서버 없는 P2P 멀티플레이: 방장 브라우저가 권위 시뮬레이터(20Hz), WebRTC DataChannel(PeerJS)
+- **컴퓨터(봇) 플레이어**: 로비에서 "+ 컴퓨터 추가"로 혼자서도 테스트 가능
 - 시드 기반 절차적 도시맵 — 모든 클라이언트가 동일 맵을 로컬 생성
 - 캐릭터/효과음 전부 절차 생성 (외부 에셋 0)
-- Vite + 순수 JS + Canvas 2D, GitHub Pages 배포
+- Vite + 순수 JS, GitHub Pages 배포, PWA 설치 지원
+
+## 📱 네이티브 앱 출시 (Capacitor)
+
+웹 빌드를 그대로 앱스토어/플레이스토어용 네이티브 앱으로 패키징할 수 있도록 `capacitor.config.json`이 포함되어 있습니다.
+
+```bash
+npm i -D @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android
+npm run build
+npx cap add android   # 또는 ios (macOS + Xcode 필요)
+npx cap sync
+npx cap open android  # Android Studio에서 빌드/서명 후 출시
+```
+
+WebRTC(PeerJS)는 iOS/Android WebView에서 그대로 동작하므로 추가 네이티브 코드 없이 P2P 멀티플레이가 유지됩니다.
 
 ## 개발
 

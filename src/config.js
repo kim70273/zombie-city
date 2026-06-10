@@ -10,8 +10,8 @@ export const INTERP_DELAY_MS = 150;      // remote entity interpolation delay
 export const COUNTDOWN_TICKS = 60;       // 3s pre-game countdown
 
 export const MAX_PLAYERS = 10;
-export const PROTO_VERSION = 1;
-export const ROOM_PREFIX = 'zc1-';
+export const PROTO_VERSION = 2;
+export const ROOM_PREFIX = 'zc2-';
 export const ROOM_CODE_LEN = 5;
 export const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 

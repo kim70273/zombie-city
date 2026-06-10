@@ -8,13 +8,21 @@ import { createSim, remainingMs } from './core/sim.js';
 import { GuestWorld } from './game/gameClient.js';
 import { startHostLoop, startGuestLoop } from './game/loop.js';
 import { InputManager } from './game/input.js';
-import { Renderer } from './render/renderer.js';
+import { Renderer3D } from './render3d/renderer3d.js';
 import { Hud } from './render/hud.js';
 import { initAudio, play } from './audio/sfx.js';
 import { EV } from './core/events.js';
 import { TILE, TICK_HZ, VACCINE_RANGE } from './config.js';
 
 const canvas = document.getElementById('game');
+const hudCanvas = document.getElementById('hud');
+
+function resizeHud() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  hudCanvas.width = Math.round(hudCanvas.clientWidth * dpr);
+  hudCanvas.height = Math.round(hudCanvas.clientHeight * dpr);
+  hudCanvas.__dpr = dpr;
+}
 
 const app = {
   mode: null, // 'host' | 'guest'
@@ -36,7 +44,10 @@ function boot() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js').catch(() => {});
   }
-  window.addEventListener('resize', () => app.renderer?.resize());
+  window.addEventListener('resize', () => {
+    app.renderer?.resize();
+    resizeHud();
+  });
   goHome();
 }
 
@@ -181,6 +192,8 @@ function showLobbyScreen() {
       if (isHost) app.host.setHostLook(prefLook);
       else app.client.sendLook(prefLook);
     },
+    onAddBot: () => app.host?.addBot(),
+    onRemoveBot: (pid) => app.host?.removeBot(pid),
   });
   updateLobby();
 }
@@ -202,8 +215,9 @@ function enterGame(map) {
   app.lobby = null;
   app.input = new InputManager(canvas);
   app.input.attach();
-  app.renderer = new Renderer(canvas, map);
+  app.renderer = new Renderer3D(canvas, map);
   app.hud = new Hud(map, app.input.isTouch);
+  resizeHud();
   app.overlay = showGameOverlay({ isTouch: app.input.isTouch, input: app.input });
   app.endShown = false;
   app.silentDead = false;
@@ -217,7 +231,9 @@ function teardownGame() {
   app.stopLoop = null;
   app.input?.detach?.();
   app.input = null;
+  app.renderer?.dispose?.();
   app.renderer = null;
+  hudCanvas.getContext('2d')?.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
   app.hud = null;
   app.overlay = null;
   app.sim = null;
@@ -269,7 +285,7 @@ function handleEvents(evs) {
         break;
       }
       case EV.SHOT: {
-        fx.spawn('muzzle', e.x + e.dx * 16, e.y + e.dy * 16 - 10);
+        fx.spawn('muzzle', e.x + e.dx * 18, e.y + e.dy * 18, { h: 26 });
         play('gunshot', { gain: gainFor(e) });
         break;
       }
@@ -373,6 +389,7 @@ function renderHost(alpha) {
     const l = p.prevX ? lp(p) : p;
     players.push({
       pid: p.pid, name: p.name, look: p.look, x: l.x, y: l.y, facing: p.facing,
+      yaw: (p.input?.aimDir ?? 0) & 0xff,
       isZombie: p.isZombie, alive: p.alive, hasGun: p.hasGun,
       ammo: p.ammo, vaccines: p.vaccines, hp: p.hp,
       stunned: sim.tick < p.stunUntil, connected: p.connected, removed: p.removedAtTick !== null,
@@ -419,6 +436,8 @@ function drawFrame(view, remMs, countdownLeft, now) {
     const follow = view.players.find((p) => p.alive && !p.removed);
     cam = follow ? { x: follow.x, y: follow.y } : { x: 0, y: 0 };
   }
+  cam.yaw = app.input.yaw;
+  cam.pitch = app.input.pitch;
   app.renderer.draw(view, cam, now, selfPid());
 
   // footsteps for the local player
@@ -439,8 +458,13 @@ function drawFrame(view, remMs, countdownLeft, now) {
       view.npcs.some((n) => n.isZombie && Math.hypot(n.x - me.x, n.y - me.y) < r);
   }
 
-  const ctx = canvas.getContext('2d');
-  app.hud.draw(ctx, canvas.width / app.renderer.dpr, canvas.height / app.renderer.dpr, {
+  const dpr = hudCanvas.__dpr || 1;
+  const ctx = hudCanvas.getContext('2d');
+  const vw = hudCanvas.width / dpr;
+  const vh = hudCanvas.height / dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, vw, vh);
+  app.hud.draw(ctx, vw, vh, {
     remainingMs: remMs,
     players: view.players,
     npcs: view.npcs,
@@ -452,6 +476,36 @@ function drawFrame(view, remMs, countdownLeft, now) {
     spectating: !!(me && !me.alive),
     vaccineHint,
   }, now);
+
+  // crosshair (third-person aim = camera center)
+  if (me && me.alive && view.phase === 'playing') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2;
+    const cx = vw / 2;
+    const cyy = vh / 2;
+    ctx.beginPath();
+    ctx.arc(cx, cyy, 3, 0, Math.PI * 2);
+    ctx.stroke();
+    for (const [dx, dy] of [[8, 0], [-8, 0], [0, 8], [0, -8]]) {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * 0.6, cyy + dy * 0.6);
+      ctx.lineTo(cx + dx * 1.6, cyy + dy * 1.6);
+      ctx.stroke();
+    }
+  }
+  // pointer-lock hint (desktop)
+  if (!app.input.isTouch && !app.input.locked && view.phase === 'playing') {
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.font = 'bold 14px sans-serif';
+    const msg = '화면을 클릭하면 마우스로 시점을 조작할 수 있어요 (ESC로 해제)';
+    const tw = ctx.measureText(msg).width + 26;
+    ctx.beginPath();
+    ctx.roundRect(vw / 2 - tw / 2, vh - 110, tw, 30, 9);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText(msg, vw / 2, vh - 90);
+  }
 }
 
 // ---------- cleanup ----------

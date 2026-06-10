@@ -1,0 +1,14 @@
+{
+  "appId": "io.github.kim70273.zombiecity",
+  "appName": "좀비시티",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "never"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

@@ -25,6 +25,8 @@ export const S = {
   minutes: (m) => `${m}분`,
   leave: '나가기',
   host: '방장',
+  bot: '🤖 컴퓨터',
+  addBot: '+ 컴퓨터 추가',
   tapToChangeLook: '캐릭터를 눌러 변경',
   // feed
   feedInfected: (n) => `🧟 ${n}님이 좀비가 되었습니다!`,

@@ -95,7 +95,8 @@ export function encodeSnapshot(sim, snapSeq, remainingMs, cx, cy) {
     dv.setUint8(o++, p.ammo);
     dv.setUint8(o++, p.vaccines);
     dv.setUint8(o++, Math.max(0, p.hp));
-    dv.setUint16(o, 0, true); o += 2;
+    dv.setUint8(o++, (p.input?.aimDir ?? 0) & 0xff); // camera yaw for 3D body orientation
+    dv.setUint8(o++, 0);
   }
 
   dv.setUint16(o, npcs.length, true); o += 2;
@@ -159,9 +160,10 @@ export function decodeSnapshot(buf) {
     const ammo = dv.getUint8(o++);
     const vaccines = dv.getUint8(o++);
     const hp = dv.getUint8(o++);
-    o += 2;
+    const yaw = dv.getUint8(o++);
+    o += 1;
     players.push({
-      pid, x, y, facing, ammo, vaccines, hp,
+      pid, x, y, facing, yaw, ammo, vaccines, hp,
       isZombie: !!(flags & 1), alive: !!(flags & 2), hasGun: !!(flags & 4),
       stunned: !!(flags & 8), connected: !!(flags & 16), removed: !!(flags & 32),
     });
