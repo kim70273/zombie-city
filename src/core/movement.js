@@ -44,12 +44,11 @@ function resolveAxis(map, x, y, r, positive, isX) {
   return pos;
 }
 
-/** 8-way facing index from a movement/aim vector (0 down, then CW: 1 DL, 2 left, 3 UL, 4 up, 5 UR, 6 right, 7 DR). */
+/** 8-way facing index from a movement/aim vector (0 down, then 1 DL, 2 left, 3 UL, 4 up, 5 UR, 6 right, 7 DR). */
 export function facingFrom(dx, dy, fallback = 0) {
   if (dx === 0 && dy === 0) return fallback;
-  const a = Math.atan2(dy, dx); // -PI..PI, +y is down
-  const oct = Math.round((a - Math.PI / 2) / (Math.PI / 4)) & 7;
-  return (8 - oct) & 7;
+  const a = Math.atan2(dy, dx); // -PI..PI, +y is down; down = PI/2
+  return Math.round((a - Math.PI / 2) / (Math.PI / 4)) & 7;
 }
 
 /** Collapse 8-way facing to 4-way sprite dir: 0 down, 1 right, 2 left, 3 up. */
