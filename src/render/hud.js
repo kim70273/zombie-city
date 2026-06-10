@@ -77,7 +77,7 @@ export class Hud {
     // --- minimap ---
     const ms = this.size;
     const mx = vw - ms - pad;
-    const my = pad;
+    const my = this.isTouch ? pad + 48 : pad; // below the top bar on small screens
     ctx.globalAlpha = 0.92;
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     roundRect(ctx, mx - 3, my - 3, ms + 6, ms + 6, 6);
