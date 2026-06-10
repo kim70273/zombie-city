@@ -399,7 +399,7 @@ function renderHost(alpha) {
     if (!p) continue;
     const l = p.prevX ? lp(p) : p;
     players.push({
-      pid: p.pid, name: p.name, look: p.look, x: l.x, y: l.y, facing: p.facing,
+      pid: p.pid, name: p.name, look: p.look, x: l.x, y: l.y, z: p.z || 0, facing: p.facing,
       yaw: (p.input?.aimDir ?? 0) & 0xff,
       isZombie: p.isZombie, alive: p.alive, hasGun: p.hasGun,
       ammo: p.ammo, vaccines: p.vaccines, hp: p.hp,

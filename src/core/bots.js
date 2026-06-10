@@ -57,6 +57,7 @@ export function botInput(sim, p, rng) {
 
   const len = Math.hypot(mx, my);
   if (len > 1) { mx /= len; my /= len; }
+  if (p.z === 0 && rng() < 0.008) buttons |= BTN.JUMP; // playful hops
   let a = Math.atan2(aim.y, aim.x);
   if (a < 0) a += Math.PI * 2;
   return {

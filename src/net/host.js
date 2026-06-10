@@ -361,6 +361,7 @@ export class HostSession {
       remainingMs: remainingMs(sim),
       players: sim.players.filter(Boolean).map((p) => ({
         pid: p.pid, x: Math.round(p.x * 4) / 4, y: Math.round(p.y * 4) / 4, facing: p.facing,
+        z: Math.round(p.z || 0),
         yaw: (p.input?.aimDir ?? 0) & 0xff,
         isZombie: p.isZombie, alive: p.alive, hasGun: p.hasGun,
         ammo: p.ammo, vaccines: p.vaccines, hp: p.hp,

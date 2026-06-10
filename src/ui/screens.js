@@ -238,9 +238,12 @@ export function showGameOverlay({ isTouch, input }) {
     atk.id = 'btn-attack';
     const use = el('div', 'tbtn', '💉');
     use.id = 'btn-use';
+    const jump = el('div', 'tbtn', S.touchJump);
+    jump.id = 'btn-jump';
     bindHold(atk, (on) => input.setButton(BTN.ATTACK | BTN.SHOOT, on));
     bindHold(use, (on) => input.setButton(BTN.USE, on));
-    tc.append(use, atk);
+    bindHold(jump, (on) => input.setButton(BTN.JUMP, on));
+    tc.append(use, jump, atk);
     wrap.appendChild(tc);
   }
 

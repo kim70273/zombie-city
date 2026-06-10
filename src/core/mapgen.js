@@ -95,6 +95,15 @@ function tryGenerate(seed, tier, force = false) {
     placeFurniture(rng, tiles, w, b);
   }
 
+  // --- 7b. building flavor (kind/floors/palette) — fixed point in the rng
+  // stream right after the doors/furniture loop so every client consumes
+  // the rng in the identical order.
+  for (const b of buildings) {
+    b.kind = (b.w >= 6 && b.h >= 6 && rng() < 0.4) ? 'apartment' : 'shop';
+    b.floors = b.kind === 'apartment' ? 2 + Math.floor(rng() * 3) : 1; // apartments 2–4
+    b.palette = Math.floor(rng() * 8); // world3d maps this to wall color schemes
+  }
+
   // --- 8. parked cars on roads beside sidewalks ---
   stampCars(rng, tiles, w, h);
 
@@ -286,8 +295,8 @@ function clearOutside(tiles, w, h, x, y) {
 
 function placeFurniture(rng, tiles, w, b) {
   if (b.w < 6 || b.h < 6) return;
-  const count = 1 + (rng() < 0.5 ? 1 : 0);
-  for (let n = 0, tries = 0; n < count && tries < 10; tries++) {
+  const count = 2 + randInt(rng, 0, 3); // 2–4 pieces — richer interiors
+  for (let n = 0, tries = 0; n < count && tries < 24; tries++) {
     const tx = b.x + 2 + randInt(rng, 0, Math.max(1, b.w - 5));
     const ty = b.y + 2 + randInt(rng, 0, Math.max(1, b.h - 4));
     const nearDoor = b.doors.some((d) => Math.abs(d.tx - tx) <= 2 && Math.abs(d.ty - ty) <= 2);

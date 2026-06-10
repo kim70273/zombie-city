@@ -10,8 +10,8 @@ export const INTERP_DELAY_MS = 150;      // remote entity interpolation delay
 export const COUNTDOWN_TICKS = 60;       // 3s pre-game countdown
 
 export const MAX_PLAYERS = 10;
-export const PROTO_VERSION = 2;
-export const ROOM_PREFIX = 'zc2-';
+export const PROTO_VERSION = 3;
+export const ROOM_PREFIX = 'zc3-';
 export const ROOM_CODE_LEN = 5;
 export const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -79,6 +79,10 @@ export const GUN_KNOCKBACK = 0.3 * TILE;
 
 // vaccine
 export const VACCINE_RANGE = 1.2 * TILE;
+
+// jump (cosmetic hop; collision stays planar)
+export const JUMP_VEL = 165;   // px/s upward
+export const GRAVITY = 520;    // px/s²
 
 // supply crates
 export const CRATE_INTERVAL_TICKS = 5 * 60 * TICK_HZ;   // every 5:00

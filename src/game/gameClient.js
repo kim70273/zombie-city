@@ -1,6 +1,7 @@
-import { TILE, TICK_MS, SPEED, PLAYER_RADIUS, INTERP_DELAY_MS } from '../config.js';
+import { TILE, TICK_MS, SPEED, PLAYER_RADIUS, INTERP_DELAY_MS, JUMP_VEL, GRAVITY } from '../config.js';
 import { createSim } from '../core/sim.js';
 import { moveCircle, facingFrom } from '../core/movement.js';
+import { BTN } from '../core/combat.js';
 import { bitGet } from '../net/codec.js';
 import { EV } from '../core/events.js';
 
@@ -52,6 +53,8 @@ export class GuestWorld {
     const self = this.shadow.players[selfPid];
     this.predX = self.x;
     this.predY = self.y;
+    this.predZ = 0;
+    this.predVz = 0;
     this.predFacing = 0;
     this.authX = self.x;
     this.authY = self.y;
@@ -81,10 +84,11 @@ export class GuestWorld {
         this.authX = sp.x;
         this.authY = sp.y;
       } else {
-        pushBuf(m, now, sp.x, sp.y, sp.facing);
+        pushBuf(m, now, sp.x, sp.y, sp.facing, sp.z || 0);
       }
       m.x = sp.x;
       m.y = sp.y;
+      m.z = sp.z || 0;
     }
 
     // global NPC bitfields (drive minimap + team flips even outside AOI)
@@ -128,10 +132,11 @@ export class GuestWorld {
         this.authX = sp.x;
         this.authY = sp.y;
       } else {
-        pushBuf(m, now, sp.x, sp.y, sp.facing);
+        pushBuf(m, now, sp.x, sp.y, sp.facing, sp.z || 0);
       }
       m.x = sp.x;
       m.y = sp.y;
+      m.z = sp.z || 0;
     }
     for (const sn of state.npcs) {
       const n = this.npcs.get(sn.id);
@@ -205,6 +210,13 @@ export class GuestWorld {
       this.predX = res.x;
       this.predY = res.y;
       if (len > 0.05) this.predFacing = facingFrom(mx, my, this.predFacing);
+      // jump prediction (same constants as the host sim)
+      if ((input.buttons & BTN.JUMP) && this.predZ === 0) this.predVz = JUMP_VEL;
+      if (this.predZ > 0 || this.predVz > 0) {
+        this.predVz -= GRAVITY * (dtMs / 1000);
+        this.predZ += this.predVz * (dtMs / 1000);
+        if (this.predZ <= 0) { this.predZ = 0; this.predVz = 0; }
+      }
     }
     // reconcile toward authoritative
     const ex = this.authX - this.predX;
@@ -225,14 +237,14 @@ export class GuestWorld {
     const players = [];
     for (const m of this.players.values()) {
       if (m.removed) continue;
-      let x = m.x, y = m.y, facing = m.facing;
+      let x = m.x, y = m.y, z = m.z || 0, facing = m.facing;
       if (m.pid === this.selfPid) {
-        x = this.predX; y = this.predY; facing = this.predFacing;
+        x = this.predX; y = this.predY; z = this.predZ; facing = this.predFacing;
       } else {
         const s = sampleBuf(m.buf, t);
-        if (s) { x = s.x; y = s.y; facing = s.facing; }
+        if (s) { x = s.x; y = s.y; z = s.z || 0; facing = s.facing; }
       }
-      players.push({ ...m, x, y, facing });
+      players.push({ ...m, x, y, z, facing });
     }
     const npcs = [];
     const showAll = this.phase === 'countdown';
@@ -257,8 +269,8 @@ export class GuestWorld {
   }
 }
 
-function pushBuf(m, t, x, y, facing) {
-  m.buf.push({ t, x, y, facing });
+function pushBuf(m, t, x, y, facing, z = 0) {
+  m.buf.push({ t, x, y, facing, z });
   if (m.buf.length > BUF_MAX) m.buf.shift();
 }
 
@@ -274,6 +286,7 @@ function sampleBuf(buf, t) {
       return {
         x: a.x + (b.x - a.x) * k,
         y: a.y + (b.y - a.y) * k,
+        z: (a.z || 0) + ((b.z || 0) - (a.z || 0)) * k,
         facing: b.facing,
       };
     }

@@ -181,6 +181,7 @@ button.small { padding: 7px 12px; font-size: 13px; border-radius: 8px; }
 .tbtn:active { background: rgba(255,255,255,0.3); }
 #btn-attack { width: 76px; height: 76px; right: 22px; bottom: 26px; font-size: 14px; }
 #btn-use { width: 58px; height: 58px; right: 110px; bottom: 86px; font-size: 12px; background: rgba(159,232,210,0.2); border-color: rgba(159,232,210,0.5); }
+#btn-jump { width: 60px; height: 60px; right: 26px; bottom: 116px; font-size: 12px; background: rgba(255,210,74,0.18); border-color: rgba(255,210,74,0.5); }
 
 /* end screen stats */
 table.stats { border-collapse: collapse; width: 100%; font-size: 13px; }

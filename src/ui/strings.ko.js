@@ -65,4 +65,5 @@ export const S = {
   zombiePick: (n) => `${n}명 중 좀비가 선택됩니다`,
   touchAttack: '공격',
   touchVaccine: '백신',
+  touchJump: '점프',
 };

@@ -150,7 +150,8 @@ export class InputManager {
     if (len > 1) { mx /= len; my /= len; }
 
     let buttons = this.touchButtons;
-    if (this.mouseDown || this.keys.has('Space')) buttons |= PRIMARY;
+    if (this.mouseDown) buttons |= PRIMARY;
+    if (this.keys.has('Space')) buttons |= BTN.JUMP;
     if (this.useHeld) buttons |= BTN.USE;
 
     let a = this.yaw % (Math.PI * 2);

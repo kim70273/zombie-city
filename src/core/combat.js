@@ -12,7 +12,7 @@ import { moveCircle } from './movement.js';
 
 const DT = TICK_MS / 1000;
 
-export const BTN = { ATTACK: 1, SHOOT: 2, USE: 4 };
+export const BTN = { ATTACK: 1, SHOOT: 2, USE: 4, JUMP: 8 };
 
 export function aimVec(aimDir) {
   const a = (aimDir / 256) * Math.PI * 2;

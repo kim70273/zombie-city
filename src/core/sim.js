@@ -1,7 +1,8 @@
 import {
   TILE, TICK_MS, COUNTDOWN_TICKS, SPEED, PLAYER_RADIUS,
-  ZPLAYER_HP, LUNGE_IMPULSE,
+  ZPLAYER_HP, LUNGE_IMPULSE, JUMP_VEL, GRAVITY,
 } from '../config.js';
+import { BTN } from './combat.js';
 import { mulberry32, subRng } from './rng.js';
 import { generateMap } from './mapgen.js';
 import { assignRoles } from './rules.js';
@@ -62,6 +63,7 @@ function makePlayer(r, spawn, isZombie) {
     look: r.look | 0,
     x: spawn.tx * TILE + TILE / 2,
     y: spawn.ty * TILE + TILE / 2,
+    z: 0, vz: 0,
     prevX: 0, prevY: 0,
     facing: 0,
     isZombie,
@@ -126,6 +128,13 @@ export function stepSim(sim) {
       p.x = res.x;
       p.y = res.y;
       p.facing = facingFrom(mx, my, p.facing);
+    }
+    // jump (visual hop; planar collision unchanged)
+    if ((p.input.buttons & BTN.JUMP) && p.z === 0) p.vz = JUMP_VEL;
+    if (p.z > 0 || p.vz > 0) {
+      p.vz -= GRAVITY * DT;
+      p.z += p.vz * DT;
+      if (p.z <= 0) { p.z = 0; p.vz = 0; }
     }
   }
 

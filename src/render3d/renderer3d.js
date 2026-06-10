@@ -12,6 +12,24 @@ const NPC_RENDER_RADIUS = 1100;
 const NPC_RENDER_MAX = 70;
 const RIG_EXPIRE_MS = 4000;
 
+/** vertical gradient anime sky */
+function makeSkyTexture() {
+  const c = document.createElement('canvas');
+  c.width = 2;
+  c.height = 512;
+  const ctx = c.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, '#4da3e8');
+  g.addColorStop(0.45, '#8ec8ee');
+  g.addColorStop(0.75, '#cfe8f4');
+  g.addColorStop(1, '#e8f2e8');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 2, 512);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 export class Renderer3D {
   constructor(canvas, map) {
     this.canvas = canvas;
@@ -20,16 +38,32 @@ export class Renderer3D {
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.12;
     this.renderer.setPixelRatio(this.dpr);
+    this.shadows = !matchMedia('(pointer: coarse)').matches; // desktop only (mobile GPU budget)
+    if (this.shadows) {
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x87c8ec);
-    this.scene.fog = new THREE.Fog(0x9fd2ee, 500, 1700);
+    this.scene.background = makeSkyTexture();
+    this.scene.fog = new THREE.Fog(0xaad4ec, 500, 1700);
 
-    const hemi = new THREE.HemisphereLight(0xcfeaff, 0x9a8f7a, 1.0);
-    const sun = new THREE.DirectionalLight(0xfff2dd, 1.6);
+    const hemi = new THREE.HemisphereLight(0xcfeaff, 0x9a8f7a, 0.9);
+    const sun = new THREE.DirectionalLight(0xfff2dd, 1.8);
     sun.position.set(600, 1000, 350);
-    this.scene.add(hemi, sun, new THREE.AmbientLight(0xffffff, 0.25));
+    if (this.shadows) {
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      const sc = sun.shadow.camera;
+      sc.left = -750; sc.right = 750; sc.top = 750; sc.bottom = -750;
+      sc.near = 100; sc.far = 2600;
+      sun.shadow.bias = -0.0006;
+    }
+    this.sun = sun;
+    this.scene.add(hemi, sun, sun.target, new THREE.AmbientLight(0xffffff, 0.22));
 
     this.world = new CityWorld(this.scene, map);
     this.factory = new CharacterFactory();
@@ -78,9 +112,15 @@ export class Renderer3D {
       shadow.rotation.x = -Math.PI / 2;
       shadow.position.y = 0.5;
       rig.group.add(shadow);
+      if (this.shadows) {
+        rig.group.traverse((o) => {
+          if (o.isMesh && o.material && o.material.isMeshToonMaterial) o.castShadow = true;
+        });
+        shadow.visible = false; // real shadows replace the blob on desktop
+      }
       this.scene.add(rig.group);
       r = {
-        rig, lastSeen: now, zombie: !!e.isZombie, gun: false,
+        rig, shadow, lastSeen: now, zombie: !!e.isZombie, gun: false,
         yawCur: 0, attackUntil: 0,
         anim: { x: e.x, y: e.y, t: now, moving: false },
         tag: null,
@@ -135,7 +175,12 @@ export class Renderer3D {
     const r = this.ensureRig(key, e, isNpc, now);
     r.lastSeen = now;
     r.rig.group.visible = true;
-    r.rig.group.position.set(e.x, 0, e.y);
+    const z = e.z || 0;
+    r.rig.group.position.set(e.x, z, e.y);
+    // keep the blob shadow glued to the ground while jumping
+    r.shadow.position.y = 0.5 - z;
+    const sk = Math.max(0.5, 1 - z / 120);
+    r.shadow.scale.setScalar(sk);
 
     // movement detection (drives walk anim + footstep sfx via anim proxy)
     const dt = Math.max(1, now - r.anim.t);
@@ -171,6 +216,7 @@ export class Renderer3D {
       moving: r.anim.moving,
       attacking: now < r.attackUntil,
       stunned: !!e.stunned,
+      airborne: z > 2,
     });
 
     if (!isNpc) this.updateTag(r, e);
@@ -296,6 +342,13 @@ export class Renderer3D {
 
     // building fade for the camera target
     this.world.update(this.map.buildingAt(cam.x, cam.y), dtSec);
+
+    // sun (and its shadow frustum) follows the camera target
+    if (this.shadows) {
+      this.sun.position.set(cam.x + 420, 760, cam.y + 280);
+      this.sun.target.position.set(cam.x, 0, cam.y);
+      this.sun.target.updateMatrixWorld();
+    }
 
     // third-person camera
     const pitch = Math.max(-0.12, Math.min(0.6, cam.pitch ?? 0.3));
