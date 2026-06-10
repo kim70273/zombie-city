@@ -127,7 +127,11 @@ function tryGenerate(seed, tier, force = false) {
   }
   if (sidewalks.length < 20) return null;
 
-  map.spawns = farthestPoints(rng, sidewalks, w, 10);
+  const innerSidewalks = sidewalks.filter((i) => {
+    const x = i % w, y = (i / w) | 0;
+    return x >= 4 && y >= 4 && x < w - 4 && y < h - 4;
+  });
+  map.spawns = farthestPoints(rng, innerSidewalks.length >= 20 ? innerSidewalks : sidewalks, w, 10);
   const outdoor = walkable.filter((i) => {
     const t = tiles[i];
     return t !== T.FLOOR && t !== T.DOOR && t !== T.ROAD; // NPCs hang out on sidewalks/grass/plaza
