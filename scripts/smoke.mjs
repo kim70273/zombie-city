@@ -26,11 +26,14 @@ watch(host, 'host');
 await host.goto(BASE, { waitUntil: 'networkidle' });
 await host.screenshot({ path: 'shots/01-home.png' });
 
-// gallery (dev-only page)
+// 3D character gallery (dev-only page)
 const gal = await ctx.newPage();
-await gal.goto(BASE + 'gallery.html', { waitUntil: 'networkidle' }).catch(() => {});
-await gal.waitForTimeout(800);
-await gal.screenshot({ path: 'shots/00-gallery.png', fullPage: false }).catch(() => {});
+await gal.goto(BASE + 'gallery3d.html', { waitUntil: 'networkidle' }).catch(() => {});
+await gal.waitForTimeout(1500);
+await gal.screenshot({ path: 'shots/00-gallery3d.png', fullPage: false }).catch(() => {});
+await gal.keyboard.press('Digit2');
+await gal.waitForTimeout(700);
+await gal.screenshot({ path: 'shots/00-gallery3d-walk.png', fullPage: false }).catch(() => {});
 await gal.close();
 
 // host creates a room
@@ -52,6 +55,12 @@ await guest.waitForSelector('.room-code', { timeout: 30000 });
 console.log('GUEST JOINED LOBBY');
 await host.waitForTimeout(500);
 await host.screenshot({ path: 'shots/02-lobby-host.png' });
+
+// host adds a bot (컴퓨터 유저)
+await host.click('button:has-text("컴퓨터 추가")');
+await host.waitForTimeout(300);
+const slots = await host.locator('.player-slot:not(.empty)').count();
+console.log('LOBBY SLOTS (host+guest+bot expected 3):', slots);
 
 // guest readies; host picks 5분 and starts
 await guest.click('button:has-text("준비")');

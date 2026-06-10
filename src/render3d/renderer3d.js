@@ -24,7 +24,7 @@ export class Renderer3D {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87c8ec);
-    this.scene.fog = new THREE.Fog(0x87c8ec, 900, 2400);
+    this.scene.fog = new THREE.Fog(0x9fd2ee, 500, 1700);
 
     const hemi = new THREE.HemisphereLight(0xcfeaff, 0x9a8f7a, 1.0);
     const sun = new THREE.DirectionalLight(0xfff2dd, 1.6);
@@ -301,11 +301,11 @@ export class Renderer3D {
     const pitch = Math.max(-0.12, Math.min(0.6, cam.pitch ?? 0.3));
     const fx = Math.cos(camYaw);
     const fz = Math.sin(camYaw);
-    const dist = 185;
+    const dist = 160;
     const dXZ = dist * Math.cos(pitch);
     const target = new THREE.Vector3(
       cam.x - fx * dXZ,
-      40 + dist * Math.sin(pitch) + 24,
+      30 + dist * Math.sin(pitch),
       cam.y - fz * dXZ
     );
     if (!this.camInit) {
@@ -315,7 +315,7 @@ export class Renderer3D {
       this.camPos.lerp(target, Math.min(1, 14 * dtSec));
     }
     this.camera.position.copy(this.camPos);
-    this.camera.lookAt(cam.x + fx * 60, 30, cam.y + fz * 60);
+    this.camera.lookAt(cam.x + fx * 60, 42, cam.y + fz * 60);
 
     this.renderer.render(this.scene, this.camera);
   }

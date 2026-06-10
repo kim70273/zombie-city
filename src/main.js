@@ -14,6 +14,7 @@ import { initAudio, play } from './audio/sfx.js';
 import { EV } from './core/events.js';
 import { TILE, TICK_HZ, VACCINE_RANGE } from './config.js';
 
+
 const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
 
@@ -102,6 +103,7 @@ function startHostGame() {
   );
   app.host.attachSim(app.sim);
   enterGame(app.sim.map);
+  faceMapCenter(app.sim.map, app.sim.players[0]);
   app.stopLoop = startHostLoop({
     sim: app.sim,
     session: app.host,
@@ -165,6 +167,7 @@ function joinRoom(codeRaw, name, look) {
 function startGuestGame(payload) {
   app.world = new GuestWorld(payload, app.client.pid);
   enterGame(app.world.map);
+  faceMapCenter(app.world.map, app.world.shadow.players[app.client.pid]);
   app.stopLoop = startGuestLoop({
     world: app.world,
     input: app.input,
@@ -245,6 +248,14 @@ function teardownGame() {
 
 function selfPid() {
   return app.mode === 'host' ? 0 : app.client?.pid ?? -1;
+}
+
+/** start looking toward the city center so spawns at the map edge face inward */
+function faceMapCenter(map, self) {
+  if (!self || !app.input) return;
+  const cx = map.w * TILE / 2;
+  const cy = map.h * TILE / 2;
+  app.input.yaw = Math.atan2(cy - self.y, cx - self.x);
 }
 
 // ---------- event → effect/sfx/feed routing ----------

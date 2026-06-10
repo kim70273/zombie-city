@@ -23,7 +23,7 @@ const BORDER_MARGIN = 2000;     // dark apron beyond map edges
 
 const WALL_MIX_BASE = '#f2e8d8'; // warm cream — keeps walls lively, not drab
 const AWNING_COLOR = '#3a2418';
-const BORDER_COLOR = '#101018';
+const BORDER_COLOR = '#2e4a36'; // dark parkland beyond the city — blends with fog, no black void
 const NEON_COLORS = ['#ff5a8a', '#5ad8ff', '#ffd24a', '#8aff5a'];
 const CAR_COLORS = ['#f2a7b3', '#a7c8f2', '#b8e6b8', '#f2d8a7', '#d8b8f2', '#f2f2f2'];
 
