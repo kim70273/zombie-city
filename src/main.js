@@ -468,3 +468,6 @@ function cleanup() {
 }
 
 boot();
+
+// debug/E2E hook
+window.__zc = app;

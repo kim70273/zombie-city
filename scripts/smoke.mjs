@@ -62,6 +62,12 @@ console.log('GAME STARTED');
 
 // countdown (3s) + a few seconds of play with movement
 await host.waitForTimeout(4500);
+const hostPos0 = await host.evaluate(() => ({ x: window.__zc.sim.players[0].x, y: window.__zc.sim.players[0].y }));
+const guestSelf0 = await guest.evaluate(() => ({ x: window.__zc.world.predX, y: window.__zc.world.predY }));
+const guestSeesHost0 = await guest.evaluate(() => {
+  const h = window.__zc.world.players.get(0);
+  return { x: h.x, y: h.y };
+});
 await host.keyboard.down('w');
 await guest.keyboard.down('d');
 await host.waitForTimeout(2500);
@@ -72,6 +78,26 @@ await guest.keyboard.down('s');
 await host.waitForTimeout(2500);
 await host.keyboard.up('a');
 await guest.keyboard.up('s');
+
+const hostPos1 = await host.evaluate(() => ({ x: window.__zc.sim.players[0].x, y: window.__zc.sim.players[0].y }));
+const guestSelf1 = await guest.evaluate(() => ({ x: window.__zc.world.predX, y: window.__zc.world.predY }));
+const guestSeesHost1 = await guest.evaluate(() => {
+  const h = window.__zc.world.players.get(0);
+  return { x: h.x, y: h.y };
+});
+const guestAuthMoved = await guest.evaluate(() => {
+  const w = window.__zc.world;
+  return Math.hypot(w.authX - w.shadow.players[w.selfPid].x, w.authY - w.shadow.players[w.selfPid].y);
+});
+const dHost = Math.hypot(hostPos1.x - hostPos0.x, hostPos1.y - hostPos0.y);
+const dGuestSelf = Math.hypot(guestSelf1.x - guestSelf0.x, guestSelf1.y - guestSelf0.y);
+const dGuestSeesHost = Math.hypot(guestSeesHost1.x - guestSeesHost0.x, guestSeesHost1.y - guestSeesHost0.y);
+console.log('HOST MOVED:', dHost.toFixed(1), 'GUEST PRED MOVED:', dGuestSelf.toFixed(1),
+  'GUEST MIRROR OF HOST MOVED:', dGuestSeesHost.toFixed(1), 'GUEST AUTH MOVED (host accepted input):', guestAuthMoved.toFixed(1));
+if (dHost < 30) { console.log('FAIL: host did not move'); process.exit(1); }
+if (dGuestSelf < 30) { console.log('FAIL: guest prediction did not move'); process.exit(1); }
+if (dGuestSeesHost < 30) { console.log('FAIL: snapshots not flowing to guest'); process.exit(1); }
+if (guestAuthMoved < 30) { console.log('FAIL: guest input not reaching host'); process.exit(1); }
 
 await host.screenshot({ path: 'shots/03-game-host.png' });
 await guest.screenshot({ path: 'shots/04-game-guest.png' });
